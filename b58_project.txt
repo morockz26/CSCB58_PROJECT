@@ -1,5 +1,4 @@
-CSCB58 Project File: Summer 2017
-
+CSCB58 Project File: winter 2018
 Team Member A
 -------------
 First Name: Mohammed
@@ -10,30 +9,31 @@ UofT E-mail Address: mohammed.osumah@mail.utoronto.ca
 
 Team Member B
 -------------
-First Name: 
-Last Name:
-Student Number:
+First Name: Sean
+Last Name: Nguyen
+Student Number: 1003458162
 UofT E-mail Address:
+seanh.nguyen@mail.utoronto.ca
 
 Team Member C
 -------------
-First Name: 
-Last Name:
-Student Number:
-UofT E-mail Address:
+First Name: Anurudran
+Last Name: Chandrasekaram
+Student Number: 1003245749
+UofT E-mail Address: anurudran.chandrasekaram@mail.utoronto.ca
 
 Team Member D
 -------------
-First Name: 
-Last Name:
-Student Number:
-UofT E-mail Address:
+First Name: Adam
+Last Name: Ah-Chong
+Student Number: 1002771182
+UofT E-mail Address: adam.ah.chong@mail.utoronto.ca
 
 Project Details
 ---------------
-Project Title: 
+Project Title: Snake
 
-Project Description:
+Project Description: A simple game of snake played using the DE2 board.
 
 Video URL:
 
@@ -46,22 +46,36 @@ Proposal
 
 What do you plan to have completed by the end of the first lab session?:
 
+Movement of the snake using keys and food spawning on the screen. Other miscellaneous things such as pausing, a start menu, etc.
+
 What do you plan to have completed by the end of the second lab session?:
+
+Collision detection of the head of the snake with the food, itself and the walls. When the snake eats food it gets longer, and when it hits itself or the edge of the screen it dies. A game over screen for when the player dies.
 
 What do you plan to have completed by the end of the third lab session?:
 
-What is your backup plan if things donâ€™t work out as planned?
+Points for eating food and a high score table. Extra time for bugs and extra things to be added.
 
-What hardware will you need beyond the DE2 board 
-(be sure to e-mail Brian if itâ€™s anything beyond the basics to make sure thereâ€™s enough to go around)
+What is your backup plan if things don’t work out as planned?
+
+What hardware will you need beyond the DE2 board ?
+(be sure to e-mail Brian if it’s anything beyond the basics to make sure there’s enough to go around)
+
+No hardware beyond the DE2 board will be needed for this project.
 
 Motivations
 -----------
 How does this project relate to the material covered in CSCB58?:
 
+The project will relate to the material covered in CSCB58 by using verilog and the vga to display our game. We will also be using FSMs and ALUs to control the data of what is being displayed on the screen.
+
 Why is this project interesting/cool (for CSCB58 students, and for non CSCB58 students?):
 
+This project will be cool because the game we are going to make will probably be addicting and fun and you can compete with your fellow classmates to get the high score.
+
 Why did you personally choose this project?:
+
+The members of our group are interested in video games and this is the most complex idea we could think of without extra resources.
 
 Attributions
 ------------
@@ -70,10 +84,21 @@ code).
 
 Updates
 -------
-
 <Example update. Delte this and add your own updates after each lab session>
 Week 1: We built the hardware and tested the sensors. The distance sensor we had intended to use didn't work as
 expected (wasn't precise enough at further distances, only seems to work accurately within 5-10cm), so instead
 we've decided to change the project to use a light sensor instead. Had trouble getting the FSM to work (kept
 getting stuck in state 101, took longer to debug than expected), so we may not be able to add the
 high score feature, have updated that in the project description as (optional).
+
+Week1:
+
+
+
+Week 2:
+
+
+
+Week 3:
+
+
