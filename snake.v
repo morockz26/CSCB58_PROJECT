@@ -1,14 +1,4 @@
-module snake(
-	input [3:0] KEY
-	);
-
-endmodule	
-	
-
-
-// Part 2 skeleton
-
-module lab6b
+module snake
 	(
 		CLOCK_50,						//	On Board 50 MHz
 		// Your inputs and outputs here
@@ -43,11 +33,16 @@ module lab6b
 	wire reset_n;
 	assign reset_n = KEY[0];
 	
+	wire left, right;
+	assign left = KEY[2];
+	assign right = KEY[1];
+	
 	// Create the colour, x, y and writeEn wires that are inputs to the controller.
 	wire [2:0] colour;
 	wire [7:0] x;
 	wire [6:0] y;
 	wire writeEn;
+	assign writeEn = 1'b1;
 
 	// Create an Instance of a VGA controller - there can be only one!
 	// Define the number of colours as well as the initial background
@@ -78,28 +73,30 @@ module lab6b
     
     // Instansiate datapath
     datapath d0(
-               .clk(CLOCK_50),
-      	       .reset_n(reset_n),
-	       .data_in(SW[6:0]),
- 	       .ld_x(ld_x),
-    	       .ld_y(ld_y),
-               .ld_r(writeEn),
-			 .colour(SW[9:7]),
+          .clk(CLOCK_50),
+      	 .reset_n(reset_n),
+ 	       .move_left(move_left),
+			 .move_up(move_up),
+			 .move_down(move_down),
+			 .move_right(move_right),
+			 .colour(3'b111), // white
  	       .data_result_x(x),
  	       .data_result_y(y),
-			 .colour_out(colour)
+			 .colour_snake(colour)
            );
+			  
+	 wire move_left, move_right, move_up, move_down;
 
     // Instansiate FSM control
      control c0(
            .clk(CLOCK_50),
            .reset_n(reset_n),
-           .go(KEY[3]),
-           .left(KEY[1]),
-			  .right(KEY[0]),
-           .ld_x(ld_x),
-           .ld_y(ld_y),
-           .ld_r(writeEn),
+           .left(left),
+			  .right(right),
+           .move_left(move_left),
+			  .move_up(move_up),
+			  .move_down(move_down),
+			  .move_right(move_right)
        );
     
 endmodule
@@ -107,15 +104,14 @@ endmodule
 module control(
     input clk,
     input reset_n,
-    input go,
     input left,
 	 input right,
-    output reg  ld_s, ld_l, ld_d, ld_u;
+    output reg  move_left, move_up, move_down, move_right
     );
 
     reg [5:0] current_state, next_state; 
     
-    localparam  S_START    = 5'd0,
+    localparam  S_RIGHT    = 5'd0,
                 S_UP       = 5'd1,
                 S_LEFT     = 5'd2,
                 S_DOWN     = 5'd3;
@@ -124,39 +120,39 @@ module control(
     always@(*)
     begin: state_table 
             case (current_state)
-                S_START: if (negedge left)     // If key 1 is pressed
+                S_RIGHT: if (negedge left)     // If key 2 is pressed
 					              next_state = S_UP; // Go to Up state
 								 else if (posedge left)
-								     next_state = S_START; // Go to start state
+								     next_state = S_RIGHT; // Go to right state
 								if (negedge right)  
 					              next_state = S_DOWN;
 								 else if (posedge right)
-								     next_state = S_START;
-                S_UP: if (negedge left)     // If key 1 is pressed
-					              next_state = S_LEFT; // Go to Up state
+								     next_state = S_RIGHT;
+                S_UP: if (negedge left)     // If key 2 is pressed
+					              next_state = S_LEFT; // Go to left state
 								 else if (posedge left)                    
-								     next_state = S_UP; // Go to start state
+								     next_state = S_UP; // Go to up state
 								if (negedge right)  
-					              next_state = S_START;
+					              next_state = S_RIGHT;
 								 else if (posedge right)
 								     next_state = S_UP;
-                S_LEFT: if (negedge left)     // If key 1 is pressed
-					              next_state = S_DOWN; // Go to Up state
+                S_LEFT: if (negedge left)     // If key 2 is pressed
+					              next_state = S_DOWN; // Go to down state
 								 else if (posedge left)                    
-								     next_state = S_LEFT; // Go to start state
+								     next_state = S_LEFT; // Go to left state
 								if (negedge right)  
 					              next_state = S_UP;
 								 else if (posedge right)
 								     next_state = S_LEFT;
-                S_DOWN: if (negedge left)     // If key 1 is pressed
-					              next_state = S_LEFT; // Go to Up state
+                S_DOWN: if (negedge left)     // If key 2 is pressed
+					              next_state = S_LEFT; // Go to left state
 								 else if (posedge left)                    
-								     next_state = S_DOWN; // Go to start state		 colour_background <= 3'b000;
+								     next_state = S_DOWN; // Go to down state
 								if (negedge right)  
-					              next_state = S_START;
+					              next_state = S_RIGHT;
 								 else if (posedge right)
 								     next_state = S_DOWN;
-            default:     next_state = S_START;
+            default:     next_state = S_RIGHT;
         endcase
     end // state_table
    
@@ -165,21 +161,40 @@ module control(
     always @(*)
     begin: enable_signals
         // By default make all our signals 0
-        ld_s = 1'b0;
-        ld_l = 1'b0;
-        ld_d = 1'b0;
-		  ld_u = 1'b0;
+        move_left <= 1'b0;
+        move_right <= 1'b0;
+        move_down <= 1'b0;
+		  move_up <= 1'b0;
 
         case (current_state)
-            S_START:
-                ld_s = 1'b1;
+            S_RIGHT:
+				begin
+					move_right <= 1'b1;
+					move_down <= 1'b0;
+					move_up <= 1'b0;
+					move_left <= 1'b0;
+				end
             S_UP:
-                ld_u = 1'b1;
+				begin
+               move_right <= 1'b0;
+					move_down <= 1'b0;
+					move_up <= 1'b1;
+					move_left <= 1'b0;
+				end
             S_LEFT:
-                ld_l = 1'b1;
+				begin
+               move_right <= 1'b0;
+					move_down <= 1'b0;
+					move_up <= 1'b0;
+					move_left <= 1'b1;
+				end
 				S_DOWN:
-				    ld_d = 1'b1;
-				
+				begin
+				   move_right <= 1'b0;
+					move_down <= 1'b1;
+					move_up <= 1'b0;
+					move_left <= 1'b0;
+				end
         // default:    // don't need default since we already made sure all of our outputs were assigned a value at the start of the always block
         endcase
     end // enable_signals
@@ -188,7 +203,7 @@ module control(
     always@(posedge clk)
     begin: state_FFs
         if(!reset_n)
-            current_state <= S_START;
+            current_state <= S_RIGHT;
         else
             current_state <= next_state;
     end // state_FFS
@@ -197,26 +212,26 @@ endmodule
 module datapath(
     input clk,
     input reset_n,
-    input [6:0] data_in,
-    input ld_x, ld_y,
-    input ld_r,
+    input move_left, move_right, move_up, move_down,
 	 input [2:0] colour,
 	 
     output [7:0] data_result_x,
     output [6:0] data_result_y,
-	 output [2:0] colour_snake,
+	 output [2:0] colour_snake
     );
     
     // input registers
     reg [7:0] x;
     reg [6:0] y;
     reg [2:0] c; 
-    reg [4:0] counter;
+    reg [21:0] counter;
+	 reg [3:0] framecount;
+	 wire update;
     
 	 // Start Game
 	 initial begin
-	    x <= 6'd80;
-		 y <= 5'd60;
+	    x <= 7'd80;
+		 y <= 6'd60;
 		 colour_snake <= 3'b111;
 	end
 	 
@@ -226,37 +241,48 @@ module datapath(
         if(!reset_n) begin
             x <= 8'b0; 
             y <= 7'b0;
-			   c <= 3'b0;	
+			   c <= 3'b0;
         end
         else begin
-            if(ld_x)
+            if(move_right && update)
             begin
-                x[6:0] <= data_in; // load alu_out if load_alu_out signal is high, otherwise load from data_in
-                x[7] <= 1'b0;
+                x <= x + 1'b1; // Move snake right
             end
-            if(ld_y)
-				begin
-				    c <= colour;
-                y <= data_in; // load alu_out if load_alu_out signal is high, otherwise load from data_in
-			   end
+            else if(move_left && update)
+            begin
+                x <= x - 1'b1; // Move snake left
+            end
+				else if(move_up && update)
+            begin
+                y <= y - 1'b1; // Move snake up
+            end
+				else if(move_down && update)
+            begin
+                y <= y + 1'b1; // Move snake down
+            end
         end
     end
 
     always @(posedge clk) // triggered every time clock rises
     begin
-	     if (ld_r == 1'b1)
-		  begin
-            if (counter == 5'b10000)
-                counter <= 5'b0;
-            else
-                counter <= counter + 1'b1;
-		  end
+		// Count for 15 frames per second - 15 Hz
+		// Want the snake to move at 4 pixel per second
+      if (counter == 22'd3333332)
+		begin
+			counter <= 22'b0;
+		end
+		else
+		begin
+         counter <= counter + 1'b1;
+		end
     end
-    // Output result register
 	 
-    assign data_result_x = x + counter[1:0];
-    assign data_result_y = y + counter[3:2];
-	 assign colour_out = c;
-        
+	 assign update = (counter == 22'd3333332) ? 1'b1 : 1'b0; // Update every 15 frames per second
+    
+	 //Output result register
+	 
+    assign data_result_x = x; //+ counter[1:0];
+    assign data_result_y = y; //+ counter[3:2];
+    assign colour_out = c;
     
 endmodule
