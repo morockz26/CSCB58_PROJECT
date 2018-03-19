@@ -243,7 +243,7 @@ module datapath(
     // Initializes a snake that is 4 pixels long
     always @(posedge clk) // triggered every time clock rises
     begin
-        if (draw_snake == 1'b1)
+	    if (draw_snake == 1'b0)
 	begin
             if (snake_counter == 5'b11)
                 draw_snake <= 1'b1;
