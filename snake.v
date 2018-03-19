@@ -196,7 +196,7 @@ module control(
 				begin
 					move_left <= 1'b1;
 				end
-				S_DOWN:
+	    S_DOWN:
 				begin
 					move_down <= 1'b1;
 				end
@@ -219,7 +219,7 @@ module datapath(
 	 
     output [7:0] data_result_x,
     output [6:0] data_result_y,
-	 output reg [2:0] colour_snake
+	 output [2:0] colour_snake
     );
     
     // input registers
@@ -227,20 +227,82 @@ module datapath(
     reg [6:0] y;
     reg [2:0] c; 
     reg [21:0] counter;
-	 reg [3:0] framecount;
-	 wire update;
-    
+    reg [3:0] framecount;
+    wire update;
+    reg [1:0] snake_counter;
+    reg [1:0] draw_snake;
+
 	 // Start Game
 	 initial begin
 	    x <= 7'd80;
-		 y <= 6'd60;
-		 colour_snake <= 3'b111;
-	end
-	 
+	    y <= 6'd60;
+	    colour_snake <= 3'b111;
+	    draw_snake <= 1'b0;
+       	 end
+
+    // Initializes a snake that is 4 pixels long
+    always @(posedge clk) // triggered every time clock rises
+    begin
+        if (draw_snake == 1'b1)
+	begin
+            if (snake_counter == 5'b11)
+                draw_snake <= 1'b1;
+            else
+            begin
+		x <= x + 1'b1;
+                snake_counter <= snake_counter + 1'b1;
+	    end
+        end
+    end
+
 	 
     // Registers a, b, c, x with respective input logic
     always@(posedge clk) begin
         if(!reset_n) begin
             x <= 8'b0; 
             y <= 7'b0;
-			   c <= 3'b0;
+	    c <= 3'b0;
+        end
+        else begin
+            if(move_right && update && draw_snake)
+            begin
+                x <= x + 1'b1; // Move snake right
+            end
+            else if(move_left && update && draw_snake)
+            begin
+                x <= x - 1'b1; // Move snake left
+            end
+	    else if(move_up && update  && draw_snake)
+            begin
+                y <= y - 1'b1; // Move snake up
+            end
+	    else if(move_down && update && draw_snake)
+            begin
+                y <= y + 1'b1; // Move snake down
+            end
+        end
+    end
+
+    always @(posedge clk) // triggered every time clock rises
+    begin
+		// Count for 15 frames per second - 15 Hz
+		// Want the snake to move at 4 pixel per second
+      if (counter == 22'd3333332)
+		begin
+		counter <= 22'b0;
+		end
+      else
+		begin
+         counter <= counter + 1'b1;
+		end
+    end
+	 
+	 assign update = (counter == 22'd3333332) ? 1'b1 : 1'b0; // Update every 15 frames per second
+    
+	 //Output result register
+	 
+    assign data_result_x = x; //+ counter[1:0];
+    assign data_result_y = y; //+ counter[3:2];
+    assign colour_out = c;
+    
+endmodule
