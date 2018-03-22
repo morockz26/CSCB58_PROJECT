@@ -1,4 +1,4 @@
-﻿module snake
+module snake
         (
                 CLOCK_50,                                                //        On Board 50 MHz
                 // Your inputs and outputs here
@@ -228,7 +228,7 @@ module datapath(
          
     output [7:0] data_result_x,
     output [6:0] data_result_y,
-         output [2:0] colour_snake
+         output reg [2:0] colour_snake
     );
     
     // input registers
@@ -239,11 +239,11 @@ module datapath(
     reg [3:0] framecount;
     wire update;
     reg [1:0] snake_counter;
-    reg [1:0] draw_snake;
+    reg draw_snake;
 	
 	//Snake piece locations (max length 256 squares)
-	reg [7:0] piece_x [255:0]
-	reg [6:0] piece_y [255:0]
+	reg [7:0] piece_x [255:0];
+	reg [6:0] piece_y [255:0];
 	
 	//background colour
 	reg [2:0] background = 3'b111;
@@ -343,13 +343,12 @@ module datapath(
 	genvar j;
 	generate
 	   for (j=0; j<=draw_snake; j=j+1) begin : draw_snakes
-			assign data_result_x <= piece_x[i]);
-			assign data_result_y <= piece_y[i]);
+			assign data_result_x = piece_x[i];
+			assign data_result_y = piece_y[i];
 			assign colour_out = c;
 			
 			if(j == draw_snake)
 				assign colour_out = background;
-	   );
 	end 
 	endgenerate
     
@@ -362,8 +361,8 @@ module snake_piece(
     input [6:0] in_y,
     input update,
 	input clk,
-    output [7:0] out_x,
-    output [6:0] out_y,
+    output reg [7:0] out_x,
+    output reg [6:0] out_y,
     output [2:0] colour_snake
     );
         
