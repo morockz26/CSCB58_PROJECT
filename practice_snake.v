@@ -235,7 +235,7 @@ module datapath(
     reg [7:0] x;
     reg [6:0] y;
     reg [2:0] c; 
-    reg [21:0] counter;
+    reg [22:0] counter;
     reg [3:0] framecount;
     wire update;
 	 reg [7:0] snake_length;
@@ -289,20 +289,16 @@ module datapath(
 				begin
 					data_result_x <= wire_piece_x[snake_counter];
 					data_result_y <= wire_piece_y[snake_counter];
-					colour_snake <= c;
+					colour_snake <= 3'b111;
+					snake_counter <= snake_counter + 1'b1;
 				end
             else if (snake_counter == snake_length)
 				begin
 					data_result_x <= wire_piece_x[snake_counter];
 					data_result_y <= wire_piece_y[snake_counter];
-					colour_snake <= 3'b111;
+					colour_snake <= 3'b000;
 					snake_counter <= 0;
 				end
-				else
-            begin
-                x <= x + 1'b1;
-                snake_counter <= snake_counter + 1'b1;
-            end
         end
     end
 
@@ -317,19 +313,19 @@ module datapath(
 		  begin
 				piece_x[0] <= wire_piece_x[0];
 				piece_y[0] <= wire_piece_y[0];		  
-            if(move_right && update && draw_snake)
+            if(move_right && update)
             begin
                 piece_x[0] <= piece_x[0] + 1'b1; // Move snake right
             end		  
-            else if(move_left && update && draw_snake)
+            else if(move_left && update)
             begin
                 piece_x[0] <= piece_x[0] - 1'b1; // Move snake left
             end
-            else if(move_up && update  && draw_snake)		  
+            else if(move_up && update)		  
             begin        
                 piece_y[0] <= piece_y[0] - 1'b1; // Move snake up
             end
-            else if(move_down && update && draw_snake)
+            else if(move_down && update)
             begin
                 piece_y[0] <= piece_y[0] + 1'b1; // Move snake down		  
             end
@@ -344,9 +340,9 @@ module datapath(
     begin
                 // Count for 15 frames per second - 15 Hz
                 // Want the snake to move at 4 pixel per second
-      if (counter == 22'd3333332)
+      if (counter == 23'd6666665)
                 begin
-                counter <= 22'b0;
+                counter <= 23'b0;
                 end
       else
                 begin
@@ -354,7 +350,7 @@ module datapath(
                 end
     end
          		  
-         assign update = (counter == 22'd3333332) ? 1'b1 : 1'b0; // Update every 15 frames per second
+         assign update = (counter == 23'd6666665) ? 1'b1 : 1'b0; // Update every 15 frames per second
     
          //Output result register
          
@@ -407,4 +403,3 @@ module snake_piece(
 	assign out_x = outx;
 	assign out_y = outy;
 endmodule
-
