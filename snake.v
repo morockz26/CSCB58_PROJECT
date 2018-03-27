@@ -3,6 +3,8 @@ module snake(
 	// Your inputs and outputs here
 	input[3:0] KEY,
 	output[3:0] LEDR,
+	output [7:0] HEX0,
+	output [7:0] HEX1,
 	// The ports below are for the VGA output.  Do not change.
 	output VGA_CLK, // VGA Clock
 	output VGA_HS, // VGA H_SYNC
@@ -17,8 +19,7 @@ module snake(
 	wire reset_n;
 	assign reset_n = KEY[0];
 
-	wire left, right, pause;
-	assign pause = KEY[3];
+	wire left, right;
 	assign left = KEY[2];
 	assign right = KEY[1];
 
@@ -56,8 +57,7 @@ module snake(
 	defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
 	defparam VGA.BACKGROUND_IMAGE = "black.mif";
 
-	// Put your code here. Your code should produce signals x,y,colour and writeEn/plot
-	// for the VGA controller, in addition to any other functionality your design may require.
+	// Code for datapath, control, and hex display
 
 	// Instansiate datapath
 	datapath d0(
@@ -69,10 +69,12 @@ module snake(
 		.move_right(move_right),
 		.data_result_x(x),
 		.data_result_y(y),
-		.colour(colour)
+		.colour(colour),
+		.score(score)
 		);
 
 	wire move_left, move_right, move_up, move_down;
+	wire [7:0] score;
 
 	//assign LEDR[3] = move_left;
 	//assign LEDR[2] = move_up;
@@ -83,7 +85,6 @@ module snake(
 	control c0(
 		.clk(CLOCK_50),
 		.resetn(reset_n),
-		.pause(pause),
 		.left(left),
 		.right(right),
 		.move_left(move_left),
@@ -92,13 +93,22 @@ module snake(
 		.move_right(move_right)
 		);
 
+	hex_display hex0(
+		.IN(score[3:0]),
+		.OUT(HEX0)
+		);
+		
+	hex_display hex1(
+		.IN(score[7:4]),
+		.OUT(HEX1)
+		);	
+
 endmodule
 
 
 module control(
 	input clk,
 	input resetn,
-	input pause,
 	input left,
 	input right,
 	output reg  move_left, move_up, move_down, move_right
@@ -113,14 +123,10 @@ module control(
 					S_RIGHT_WAIT = 5'd4,
 					S_UP_WAIT = 5'd5,
 					S_LEFT_WAIT = 5'd6,
-					S_DOWN_WAIT = 5'd7,
-					S_PAUSE = 5'd8,
-					S_PAUSE_WAIT = 5'd9,
-					S_CONTINUE = 5'd10,
-					S_CONTINUE_WAIT = 5'd11;
+					S_DOWN_WAIT = 5'd7;		
 				
 	// Next state logic aka our state table
-	always@(negedge left, negedge right, negedge pause)
+	always@(negedge left, negedge right)
 	begin: state_table 
 		case (current_state)
 			S_RIGHT:
@@ -129,8 +135,6 @@ module control(
 					next_state = S_UP_WAIT; // Go to Up state
 				else if (right == 1'b0)  
 					next_state = S_DOWN_WAIT;
-				else if (pause == 1'b0)
-					next_state = S_PAUSE_WAIT;
 				else
 					next_state = S_RIGHT;
 			end
@@ -140,8 +144,6 @@ module control(
 					next_state = S_LEFT_WAIT; // Go to left state
 				else if (right == 1'b0)  
 					next_state = S_RIGHT_WAIT;
-				else if (pause == 1'b0)
-					next_state = S_PAUSE_WAIT;
 				else
 					next_state = S_UP;
 			end
@@ -151,8 +153,6 @@ module control(
 					next_state = S_UP_WAIT; // Go to down state
 				else if (right == 1'b0)  
 					next_state = S_DOWN_WAIT;
-				else if (pause == 1'b0)
-					next_state = S_PAUSE_WAIT;
 				else
 					next_state = S_LEFT;
 			end
@@ -162,8 +162,6 @@ module control(
 					next_state = S_LEFT_WAIT; // Go to            default:     next_state = S_RIGHT; left state
 				else if (right == 1'b0)  
 					next_state = S_RIGHT_WAIT;
-				else if (pause == 1'b0)
-					next_state = S_PAUSE_WAIT;
 				else
 					next_state = S_DOWN;
 			end
@@ -171,16 +169,6 @@ module control(
 			S_UP_WAIT: next_state = S_UP;
 			S_LEFT_WAIT: next_state = S_LEFT;
 			S_DOWN_WAIT: next_state = S_DOWN;
-			S_PAUSE:
-			begin
-				if (pause == 1'b0)
-					next_state = S_CONTINUE_WAIT;
-				else
-					next_state = S_PAUSE;
-			end
-			S_PAUSE_WAIT: next_state = S_PAUSE;
-			S_CONTINUE: next_state = S_RIGHT;
-			S_CONTINUE_WAIT: next_state = S_CONTINUE;
 			default: next_state = S_RIGHT;
 		endcase
 	end // state_table
@@ -211,13 +199,6 @@ module control(
 			begin
 				move_down <= 1'b1;
 			end
-			S_PAUSE:
-			begin
-				move_right <= 1'b0;
-				move_down <= 1'b0;
-				move_up <= 1'b0;
-				move_left <= 1'b0;
-			end
 			// default:    // don't need default since we already made sure all of our outputs were assigned a value at the start of the always block
 		endcase
 	end // enable_signals
@@ -237,89 +218,154 @@ module datapath(
     input clk,
     input reset_n,
     input move_left, move_right, move_up, move_down,
-    output reg [7:0] data_result_x,
-    output reg [6:0] data_result_y,
-    output reg [2:0] colour
+    output [7:0] data_result_x,
+    output [6:0] data_result_y,
+    output [2:0] colour,
+	 output reg [7:0] score
     );
 
 	// input registers
-	//reg [7:0] x;
-	//reg [6:0] y;
-	integer count, count2;
-	reg [2:0] col;
 	reg [22:0] counter;
-	wire update, erase;
-	reg [7:0] snake_length;
-	reg [7:0] snake_counter;
-	reg draw_snake;
+	wire update, erase; // For deciding when to update and erase the snake piece
+	
+	// Coordinates and extra for the food
+	wire spawn_food;
+	reg [7:0] food_x;
+	reg [6:0] food_y;
+	reg [2:0] food_col;
 
-	//Snake piece locations (max length 160 squares)
+	//Snake piece locations (max length 160 squares) and extra
 	reg [7:0] piece_x [159:0];
 	reg [6:0] piece_y [159:0];
+	reg [7:0] snake_length;
+	reg [7:0] snake_counter;
+	reg [2:0] col;
+	reg update_1 = 1'b0;
+	reg [7:0] posX;
+	reg [6:0] posY;
 
 	// Start Game
 	initial begin
 		snake_length <= 8'b00000100;
-		snake_counter <= 8'b00000000;
+		snake_counter <= snake_length;
+		
+		// Initialize snakes position
 		piece_x[0] <= 7'd80;
 		piece_y[0] <= 6'd60;
+		piece_x[1] <= 7'd79;
+		piece_y[1] <= 6'd60;
+		piece_x[2] <= 7'd78;
+		piece_y[2] <= 6'd60;
+		piece_x[3] <= 7'd77;
+		piece_y[3] <= 6'd60;
+		piece_x[4] <= 7'd76;
+		piece_y[4] <= 6'd60;
 		col <= 3'b111;
+		
+		// Initialize food
+		food_x <= 7'd80;
+		food_y <= 7'd60;
+		food_col <= 3'b100; // red
+		
+		// Score starts at 0
+		score <= 8'b0;
 	end
-
+			
+	wire [7:0] wire_piece_x [159:0];
+	wire [6:0] wire_piece_y [159:0];
 
 	always@(posedge clk) begin
 		if(!reset_n) begin
-			piece_x[0] <= 7'd80; 
+			piece_x[0] <= 7'd80;
 			piece_y[0] <= 6'd60;
+			piece_x[1] <= 7'd79;
+			piece_y[1] <= 6'd60;
+			piece_x[2] <= 7'd78;
+			piece_y[2] <= 6'd60;
+			piece_x[3] <= 7'd77;
+			piece_y[3] <= 6'd60;
+			piece_x[4] <= 7'd76;
+			piece_y[4] <= 6'd60;
 			col <= 3'b111;
-			snake_counter = 8'b00000000;
 			snake_length = 8'b00000100;
+			snake_counter = snake_length;
 		end
 		else 
 		begin
-				// update the position of the snake body before changing the head
-		    for(count = 159; count > 0; count = count - 1)
-				begin
-					piece_x[count] <= piece_x[count - 1];
-					piece_y[count] <= piece_y[count - 1];
-				end
-				//update the head
-				col <= 3'b111; // Make white
-				if(move_right && update)
+		if (update || update_1) // Decides when to draw snake and move it
+		begin
+			update_1 <= 1'b1;
+			if (snake_counter == snake_length)
+			begin
+				piece_x[snake_counter] <= piece_x[snake_counter - 1];
+				piece_y[snake_counter] <= piece_y[snake_counter - 1];
+				posX <= piece_x[snake_counter];
+				posY <= piece_y[snake_counter];
+				col <= 3'b000;
+				snake_counter <= snake_counter - 1'b1;
+			end
+			else if (snake_counter != 1'b0)
+			begin
+				piece_x[snake_counter] <= piece_x[snake_counter - 1];
+				piece_y[snake_counter] <= piece_y[snake_counter - 1];
+				posX <= piece_x[snake_counter];
+				posY <= piece_y[snake_counter];
+				col <= 3'b111;
+				snake_counter <= snake_counter - 1'b1;
+			end	
+			else if (snake_counter == 1'b0)
+			begin
+				if(move_right)
 				begin
 					piece_x[0] <= piece_x[0] + 1'b1; // Move snake right
 				end		  
-				else if(move_left && update)
+				else if(move_left)
 				begin
 					piece_x[0] <= piece_x[0] - 1'b1; // Move snake left
 				end
-				else if(move_up && update)
+				else if(move_up)
 				begin        
 					piece_y[0] <= piece_y[0] - 1'b1; // Move snake up
 				end
-				else if(move_down && update)
+				else if(move_down)
 				begin
 					piece_y[0] <= piece_y[0] + 1'b1; // Move snake down		  
 				end
-		end
-		// draw the snake
-		for(count2 = 0; count2 < 160 && count2 < snake_length + 1; count2 = count2 + 1)
-			begin
-				if(count2 <= snake_length)
-						col <= 3'b111;
-				else
-						col <= 3'b000;
-				data_result_x <= piece_x[count2];
-				data_result_y <= piece_y[count2];
-				colour <= col;
+				posX <= piece_x[0];
+				posY <= piece_y[0];
+				col <= 3'b111;
+				snake_counter <= snake_length;
+				update_1 <= 1'b0;
 			end
+		end
 	end
-   // update the location of all the snake before outputing them
-	//assign colour = col;
-	//assign data_result_x = piece_x[0];
-	//assign data_resul
-	//add
+	end
 	
+	wire collision;
+	assign collision = (food_x == piece_x[0] && food_y == piece_y[0]) ? 1 : 0;
+	
+	always@(posedge clk)
+	begin
+		if (!reset_n)
+			score <= 8'b0;
+		else if (collision) // Check for collision
+		begin
+			food_col <= 3'b100; // Need to move food to different location
+			food_x <=  food_counter_x;
+			food_y <= food_counter_y;
+			score <= score + 1'b1; // Increase score by 1
+		end
+		else
+		begin
+			food_col <= 3'b000;
+		end
+	end
+	
+	assign spawn_food = food_col == 3'b100 ? 1 : 0;
+
+	assign colour = spawn_food ? food_col : col;
+	assign data_result_x = spawn_food ? food_x : posX;
+	assign data_result_y = spawn_food ? food_y : posY;
 
 	always @(posedge clk)
 	// triggered every time clock rises
@@ -337,6 +383,23 @@ module datapath(
 	end
 
 	assign update = (counter == 23'd6666665) ? 1'b1 : 1'b0; // Update every 7.5 frames per second
-	assign erase = (counter == 23'd6666664) ? 1'b1 : 1'b0; // Erase just before updating
+	//assign erase = (counter == 23'd6666664) ? 1'b1 : 1'b0; // Erase just before updating
+	
+	reg [7:0] food_counter_x;
+	reg [6:0] food_counter_y;
+
+	// Our attempt to mak the food respawn randomly
+	always@(posedge clk)
+	begin
+		if (food_counter_x == 8'd160)
+			food_counter_x <= 8'd0;
+		else
+			food_counter_x <= food_counter_x + 1'b1;
+			
+		if (food_counter_y == 8'd120)
+			food_counter_y <= 8'd0;
+		else
+			food_counter_y <= food_counter_y + 1'b1; 
+	end
 
 endmodule
