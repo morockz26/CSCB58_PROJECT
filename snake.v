@@ -292,53 +292,59 @@ module datapath(
 		end
 		else 
 		begin
-		if (update || update_1) // Decides when to draw snake and move it
-		begin
-			update_1 <= 1'b1;
-			if (snake_counter == snake_length)
+			if (collision) // Grow snake on collision
 			begin
-				piece_x[snake_counter] <= piece_x[snake_counter - 1];
-				piece_y[snake_counter] <= piece_y[snake_counter - 1];
-				posX <= piece_x[snake_counter];
-				posY <= piece_y[snake_counter];
-				col <= 3'b000;
-				snake_counter <= snake_counter - 1'b1;
-			end
-			else if (snake_counter != 1'b0)
-			begin
-				piece_x[snake_counter] <= piece_x[snake_counter - 1];
-				piece_y[snake_counter] <= piece_y[snake_counter - 1];
-				posX <= piece_x[snake_counter];
-				posY <= piece_y[snake_counter];
-				col <= 3'b111;
-				snake_counter <= snake_counter - 1'b1;
-			end	
-			else if (snake_counter == 1'b0)
-			begin
-				if(move_right)
-				begin
-					piece_x[0] <= piece_x[0] + 1'b1; // Move snake right
-				end		  
-				else if(move_left)
-				begin
-					piece_x[0] <= piece_x[0] - 1'b1; // Move snake left
-				end
-				else if(move_up)
-				begin        
-					piece_y[0] <= piece_y[0] - 1'b1; // Move snake up
-				end
-				else if(move_down)
-				begin
-					piece_y[0] <= piece_y[0] + 1'b1; // Move snake down		  
-				end
-				posX <= piece_x[0];
-				posY <= piece_y[0];
-				col <= 3'b111;
+				snake_length <= snake_length + 1'b1;
 				snake_counter <= snake_length;
-				update_1 <= 1'b0;
+			end
+
+			if (update || update_1) // Decides when to draw snake and move it
+			begin
+				update_1 <= 1'b1;
+				if (snake_counter == snake_length)
+				begin
+					piece_x[snake_counter] <= piece_x[snake_counter - 1];
+					piece_y[snake_counter] <= piece_y[snake_counter - 1];				
+					posX <= piece_x[snake_counter];
+					posY <= piece_y[snake_counter];
+					col <= 3'b000;
+					snake_counter <= snake_counter - 1'b1;
+				end
+				else if (snake_counter != 1'b0)
+				begin
+					piece_x[snake_counter] <= piece_x[snake_counter - 1];
+					piece_y[snake_counter] <= piece_y[snake_counter - 1];
+					posX <= piece_x[snake_counter];
+					posY <= piece_y[snake_counter];
+					col <= 3'b111;
+					snake_counter <= snake_counter - 1'b1;
+				end	
+				else if (snake_counter == 1'b0)
+				begin
+					if(move_right)
+					begin
+						piece_x[0] <= piece_x[0] + 1'b1; // Move snake right
+					end		  
+					else if(move_left)
+					begin
+						piece_x[0] <= piece_x[0] - 1'b1; // Move snake left
+					end
+					else if(move_up)
+					begin        
+						piece_y[0] <= piece_y[0] - 1'b1; // Move snake up
+					end
+					else if(move_down)
+					begin
+						piece_y[0] <= piece_y[0] + 1'b1; // Move snake down		  
+					end
+					posX <= piece_x[0];
+					posY <= piece_y[0];
+					col <= 3'b111;
+					snake_counter <= snake_length;
+					update_1 <= 1'b0;
+				end
 			end
 		end
-	end
 	end
 	
 	wire collision;
