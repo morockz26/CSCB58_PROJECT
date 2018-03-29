@@ -232,7 +232,7 @@ module control(
 	// current_state registers
 	always@(posedge clk)
 	begin: state_FFs
-		if (resetn)
+		if (!resetn)
 			current_state = S_RIGHT;
 		else
 			current_state <= next_state;
@@ -380,7 +380,7 @@ module datapath(
 	
 	always@(posedge clk)
 	begin
-		if (reset_n)
+		if (!reset_n)
 			score <= 8'b0;
 		else if (collision) // Check for collision
 		begin
