@@ -294,8 +294,8 @@ module datapath(
 		begin
 			if (collision) // Grow snake on collision
 			begin
-				snake_length <= snake_length + 1'b1;
 				snake_counter <= snake_length;
+				snake_length <= snake_length + 1'b1;
 			end
 
 			if (update || update_1) // Decides when to draw snake and move it
