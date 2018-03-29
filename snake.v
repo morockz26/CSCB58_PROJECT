@@ -2,6 +2,7 @@ module snake(
 	input CLOCK_50, // On Board 50 MHz
 	// Your inputs and outputs here
 	input[3:0] KEY,
+	input[3:0] SW,
 	output[3:0] LEDR,
 	output [7:0] HEX0,
 	output [7:0] HEX1,
@@ -19,11 +20,13 @@ module snake(
 	);
 
 	wire reset_n;
-	assign reset_n = KEY[0];
+	assign reset_n = SW[0];
 
-	wire left, right;
-	assign left = KEY[2];
-	assign right = KEY[1];
+	wire left, right, up, down;
+	assign left = ~KEY[3];
+	assign right = ~KEY[0];
+	assign up = ~KEY[2];
+	assign down = ~KEY[1];
 
 	// Create the colour, x, y and writeEn wires that are inputs to the controller.
 	wire [2:0] colour;
@@ -90,6 +93,8 @@ module snake(
 		.resetn(reset_n),
 		.left(left),
 		.right(right),
+		.up(up),
+		.down(down),
 		.move_left(move_left),
 		.move_up(move_up),
 		.move_down(move_down),
@@ -124,64 +129,66 @@ module control(
 	input resetn,
 	input left,
 	input right,
+	input up,
+	input down,
 	output reg  move_left, move_up, move_down, move_right
 	);
 
 	reg [5:0] current_state, next_state; 
 
 	localparam  S_RIGHT = 5'd0,
-					S_UP = 5'd1,
-               S_LEFT = 5'd2,
-					S_DOWN = 5'd3,
-					S_RIGHT_WAIT = 5'd4,
-					S_UP_WAIT = 5'd5,
-					S_LEFT_WAIT = 5'd6,
-					S_DOWN_WAIT = 5'd7;		
+					S_UP = 5'd2,                                                   //00- right, 01-DOWN, 10-UP, 11-left 
+               S_LEFT = 5'd3,
+					S_DOWN = 5'd1;
+//					S_RIGHT_WAIT = 5d4,
+//					S_UP_WAIT = 5'd4;
+//					S_LEFT_WAIT = 5'd6,
+//					S_DOWN_WAIT = 5'd7;		
 				
 	// Next state logic aka our state table
-	always@(negedge left, negedge right)
+	always@(posedge left, posedge right, posedge up, posedge down)
 	begin: state_table 
 		case (current_state)
 			S_RIGHT:
 			begin
-				if (left == 1'b0)     // If key 2 is pressed
-					next_state = S_UP_WAIT; // Go to Up state
-				else if (right == 1'b0)  
-					next_state = S_DOWN_WAIT;
+				if (up == 1'b1)     // If key 2 is pressed
+					next_state = S_UP; // Go to Up state
+				else if (down == 1'b1)  
+					next_state = S_DOWN;
 				else
 					next_state = S_RIGHT;
 			end
 			S_UP:
 			begin
-				if (left == 1'b0)     // If key 2 is pressed
-					next_state = S_LEFT_WAIT; // Go to left state
-				else if (right == 1'b0)  
-					next_state = S_RIGHT_WAIT;
+				if (left == 1'b1)     // If key 2 is pressed
+					next_state = S_LEFT; // Go to left state
+				else if (right == 1'b1)  
+					next_state = S_RIGHT;
 				else
 					next_state = S_UP;
 			end
 			S_LEFT:
 			begin
-				if (left == 1'b0)     // If key 2 is pressed
-					next_state = S_UP_WAIT; // Go to down state
-				else if (right == 1'b0)  
-					next_state = S_DOWN_WAIT;
+				if (down == 1'b1)     // If key 2 is pressed
+					next_state = S_DOWN; // Go to down state
+				else if (up == 1'b1)  
+					next_state = S_UP;
 				else
 					next_state = S_LEFT;
 			end
 			S_DOWN:
 			begin
-				if (left == 1'b0)     // If key 2 is pressed
-					next_state = S_LEFT_WAIT; // Go to            default:     next_state = S_RIGHT; left state
-				else if (right == 1'b0)  
-					next_state = S_RIGHT_WAIT;
+				if (left == 1'b1)     // If key 2 is pressed
+					next_state = S_LEFT; // Go to            default:     next_state = S_RIGHT; left state
+				else if (right == 1'b1)  
+					next_state = S_RIGHT;
 				else
 					next_state = S_DOWN;
 			end
-			S_RIGHT_WAIT: next_state = S_RIGHT;
-			S_UP_WAIT: next_state = S_UP;
-			S_LEFT_WAIT: next_state = S_LEFT;
-			S_DOWN_WAIT: next_state = S_DOWN;
+//			S_RIGHT_WAIT: next_state = S_RIGHT;
+//			S_UP_WAIT: next_state = S_UP;
+//			S_LEFT_WAIT: next_state = S_LEFT;
+//			S_DOWN_WAIT: next_state = S_DOWN;
 			default: next_state = S_RIGHT;
 		endcase
 	end // state_table
@@ -194,7 +201,7 @@ module control(
 		move_down <= 1'b0;
 		move_up <= 1'b0;
 		move_left <= 1'b0;
-
+		
 		case (current_state)
 			S_RIGHT:
 			begin
@@ -212,14 +219,20 @@ module control(
 			begin
 				move_down <= 1'b1;
 			end
-			// default:    // don't need default since we already made sure all of our outputs were assigned a value at the start of the always block
+			default:
+			begin
+				move_right <= 1'b0;
+				move_down <= 1'b0;
+				move_up <= 1'b0;
+				move_left <= 1'b0;
+			end
 		endcase
 	end // enable_signals
 
 	// current_state registers
 	always@(posedge clk)
 	begin: state_FFs
-		if (!resetn)
+		if (resetn)
 			current_state = S_RIGHT;
 		else
 			current_state <= next_state;
@@ -274,8 +287,6 @@ module datapath(
 		piece_y[3] <= 7'd60;
 		piece_x[4] <= 8'd76;
 		piece_y[4] <= 7'd60;
-		posX <= 8'd76;
-		posY <= 7'd60;
 		col <= 3'b111;
 		
 		// Initialize food
@@ -312,7 +323,7 @@ module datapath(
 			if (collision) // Grow snake on collision
 			begin
 				snake_counter <= snake_length;
-				snake_length <= snake_length + 1'b1;
+				snake_length <= snake_length + 3'b100;
 			end
 
 			if (update || update_1) // Decides when to draw snake and move it
@@ -369,7 +380,7 @@ module datapath(
 	
 	always@(posedge clk)
 	begin
-		if (!reset_n)
+		if (reset_n)
 			score <= 8'b0;
 		else if (collision) // Check for collision
 		begin
@@ -426,4 +437,35 @@ module datapath(
 			food_counter_y <= food_counter_y + 1'b1; 
 	end
 
+endmodule
+
+
+module hex_display(IN, OUT);
+    input [3:0] IN;
+	 output reg [6:0] OUT;
+	 
+	 always @(*)
+	 begin
+		case(IN[3:0])
+			4'b0000: OUT = 7'b1000000;
+			4'b0001: OUT = 7'b1111001;
+			4'b0010: OUT = 7'b0100100;
+			4'b0011: OUT = 7'b0110000;
+			4'b0100: OUT = 7'b0011001;
+			4'b0101: OUT = 7'b0010010;
+			4'b0110: OUT = 7'b0000010;
+			4'b0111: OUT = 7'b1111000;
+			4'b1000: OUT = 7'b0000000;
+			4'b1001: OUT = 7'b0011000;
+			4'b1010: OUT = 7'b0001000;
+			4'b1011: OUT = 7'b0000011;
+			4'b1100: OUT = 7'b1000110;
+			4'b1101: OUT = 7'b0100001;
+			4'b1110: OUT = 7'b0000110;
+			4'b1111: OUT = 7'b0001110;
+			
+			default: OUT = 7'b0111111;
+		endcase
+
+	end
 endmodule
