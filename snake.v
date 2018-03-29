@@ -5,6 +5,8 @@ module snake(
 	output[3:0] LEDR,
 	output [7:0] HEX0,
 	output [7:0] HEX1,
+	output [7:0] HEX4,
+	output [7:0] HEX5,
 	// The ports below are for the VGA output.  Do not change.
 	output VGA_CLK, // VGA Clock
 	output VGA_HS, // VGA H_SYNC
@@ -70,11 +72,12 @@ module snake(
 		.data_result_x(x),
 		.data_result_y(y),
 		.colour(colour),
-		.score(score)
+		.score(score),
+		.highscore(highscore)
 		);
 
 	wire move_left, move_right, move_up, move_down;
-	wire [7:0] score;
+	wire [7:0] score, highscore;
 
 	//assign LEDR[3] = move_left;
 	//assign LEDR[2] = move_up;
@@ -101,7 +104,17 @@ module snake(
 	hex_display hex1(
 		.IN(score[7:4]),
 		.OUT(HEX1)
-		);	
+		);
+	
+	hex_display hex4(
+		.IN(highscore[3:0]),
+		.OUT(HEX4)
+		);
+		
+	hex_display hex5(
+		.IN(highscore[7:4]),
+		.OUT(HEX5)
+		);		
 
 endmodule
 
@@ -215,18 +228,19 @@ module control(
 endmodule
 
 module datapath(
-    input clk,
-    input reset_n,
-    input move_left, move_right, move_up, move_down,
-    output [7:0] data_result_x,
-    output [6:0] data_result_y,
-    output [2:0] colour,
-	 output reg [7:0] score
-    );
+	input clk,
+	input reset_n,
+	input move_left, move_right, move_up, move_down,
+	output [7:0] data_result_x,
+	output [6:0] data_result_y,
+	output [2:0] colour,
+	output reg [7:0] score,
+	output reg [7:0] highscore
+	);
 
 	// input registers
 	reg [22:0] counter;
-	wire update, erase; // For deciding when to update and erase the snake piece
+	wire update; // For deciding when to update and erase the snake piece
 	
 	// Coordinates and extra for the food
 	wire spawn_food;
@@ -247,28 +261,31 @@ module datapath(
 	// Start Game
 	initial begin
 		snake_length <= 8'b00000100;
-		snake_counter <= snake_length;
+		snake_counter <= 8'b00000100;
 		
 		// Initialize snakes position
-		piece_x[0] <= 7'd80;
-		piece_y[0] <= 6'd60;
-		piece_x[1] <= 7'd79;
-		piece_y[1] <= 6'd60;
-		piece_x[2] <= 7'd78;
-		piece_y[2] <= 6'd60;
-		piece_x[3] <= 7'd77;
-		piece_y[3] <= 6'd60;
-		piece_x[4] <= 7'd76;
-		piece_y[4] <= 6'd60;
+		piece_x[0] <= 8'd80;
+		piece_y[0] <= 7'd60;
+		piece_x[1] <= 8'd79;
+		piece_y[1] <= 7'd60;
+		piece_x[2] <= 8'd78;
+		piece_y[2] <= 7'd60;
+		piece_x[3] <= 8'd77;
+		piece_y[3] <= 7'd60;
+		piece_x[4] <= 8'd76;
+		piece_y[4] <= 7'd60;
+		posX <= 8'd76;
+		posY <= 7'd60;
 		col <= 3'b111;
 		
 		// Initialize food
-		food_x <= 7'd80;
+		food_x <= 8'd80;
 		food_y <= 7'd60;
 		food_col <= 3'b100; // red
 		
 		// Score starts at 0
 		score <= 8'b0;
+		highscore <= 8'b0;
 	end
 			
 	wire [7:0] wire_piece_x [159:0];
@@ -287,8 +304,8 @@ module datapath(
 			piece_x[4] <= 7'd76;
 			piece_y[4] <= 6'd60;
 			col <= 3'b111;
-			snake_length = 8'b00000100;
-			snake_counter = snake_length;
+			snake_length <= 8'b00000100;
+			snake_counter <= 8'b00000100;
 		end
 		else 
 		begin
@@ -360,6 +377,7 @@ module datapath(
 			food_x <=  food_counter_x;
 			food_y <= food_counter_y;
 			score <= score + 1'b1; // Increase score by 1
+			highscore <= (score > highscore) ? highscore + 1'b1 : highscore;
 		end
 		else
 		begin
@@ -403,7 +421,7 @@ module datapath(
 			food_counter_x <= food_counter_x + 1'b1;
 			
 		if (food_counter_y == 8'd120)
-			food_counter_y <= 8'd0;
+			food_counter_y <= 7'd0;
 		else
 			food_counter_y <= food_counter_y + 1'b1; 
 	end
