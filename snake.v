@@ -287,18 +287,20 @@ module datapath(
 		piece_y[3] <= 7'd60;
 		piece_x[4] <= 8'd76;
 		piece_y[4] <= 7'd60;
-		col <= 3'b111;
 		
 		// Initialize food
 		food_x <= 8'd80;
 		food_y <= 7'd60;
 		food_col <= 3'b100; // red
+		posX <= 8'd80;
+		posY <= 7'd60;
+		col <= 3'b100;
 		
 		// Score starts at 0
 		score <= 8'b0;
 		highscore <= 8'b0;
 	end
-			
+
 	wire [7:0] wire_piece_x [159:0];
 	wire [6:0] wire_piece_y [159:0];
 
@@ -322,8 +324,9 @@ module datapath(
 		begin
 			if (collision) // Grow snake on collision
 			begin
-				snake_counter <= snake_length;
 				snake_length <= snake_length + 3'b100;
+				snake_counter <= snake_length;
+				//snake_length <= snake_length + 3'b100;
 			end
 
 			if (update || update_1) // Decides when to draw snake and move it
@@ -396,7 +399,7 @@ module datapath(
 		end
 	end
 	
-	assign spawn_food = food_col == 3'b100 ? 1 : 0;
+	assign spawn_food = (food_col == 3'b100) ? 1 : 0;
 
 	assign colour = spawn_food ? food_col : col;
 	assign data_result_x = spawn_food ? food_x : posX;
@@ -418,7 +421,6 @@ module datapath(
 	end
 
 	assign update = (counter == 23'd6666665) ? 1'b1 : 1'b0; // Update every 7.5 frames per second
-	//assign erase = (counter == 23'd6666664) ? 1'b1 : 1'b0; // Erase just before updating
 	
 	reg [7:0] food_counter_x;
 	reg [6:0] food_counter_y;
