@@ -268,7 +268,6 @@ module datapath(
 	reg [7:0] snake_counter;
 	reg [2:0] col;
 	reg update_1 = 1'b0;
-	reg collision_1 = 1'b0;
 	reg [7:0] posX;
 	reg [6:0] posY;
 
@@ -326,24 +325,20 @@ module datapath(
 			if (collision) // Grow snake on collision
 			begin
 				snake_length <= snake_length + 3'b100;
-				snake_counter <= snake_length;
-				collision_1 <= 1'b1;
+				//snake_counter <= snake_length;
+				piece_x[snake_counter] <= piece_x[snake_counter - 1];
+				piece_y[snake_counter] <= piece_y[snake_counter - 1];
+				posX <= piece_x[snake_counter];
+				posY <= piece_y[snake_counter];
+				col <= 3'b000;
+				snake_counter <= snake_counter - 1'b1;
 				//snake_length <= snake_length + 3'b100;
 			end
 
 			if (update || update_1) // Decides when to draw snake and move it
 			begin
 				update_1 <= 1'b1;
-				if ((snake_counter == snake_length) && collision_1)
-				begin
-					piece_x[snake_counter] <= piece_x[snake_counter - 1];
-					piece_y[snake_counter] <= piece_y[snake_counter - 1];				
-					posX <= piece_x[snake_counter];
-					posY <= piece_y[snake_counter];
-					col <= 3'b111;
-					snake_counter <= snake_counter - 1'b1;
-				end
-				if ((snake_counter == snake_length) && ~collision_1)
+				if (snake_counter == snake_length)
 				begin
 					piece_x[snake_counter] <= piece_x[snake_counter - 1];
 					piece_y[snake_counter] <= piece_y[snake_counter - 1];				
