@@ -254,6 +254,7 @@ module datapath(
 	// input registers
 	reg [22:0] counter;
 	wire update; // For deciding when to update and erase the snake piece
+	integer max = 159;
 	
 	// Coordinates and extra for the food
 	wire spawn_food;
@@ -267,7 +268,9 @@ module datapath(
 	reg [7:0] snake_length;
 	reg [7:0] snake_counter;
 	reg [2:0] col;
+	reg collision_death = 1'b0;
 	reg update_1 = 1'b0;
+	integer i;
 	reg [7:0] posX;
 	reg [6:0] posY;
 
@@ -305,7 +308,12 @@ module datapath(
 	wire [6:0] wire_piece_y [159:0];
 
 	always@(posedge clk) begin
-		if(!reset_n) begin
+	    for (i=5; i < 159 && i < snake_length; i=i+1) begin
+		     if (piece_x[0] == piece_x[i] && piece_y[0] == piece_y[i])
+			      collision_death <= 1'b1;
+		     end
+		if(!reset_n || collision_death) begin
+		   //for (count = 1, count < max, count = count + 1)
 			piece_x[0] <= 7'd80;
 			piece_y[0] <= 6'd60;
 			piece_x[1] <= 7'd79;
@@ -319,6 +327,7 @@ module datapath(
 			col <= 3'b111;
 			snake_length <= 8'b00000100;
 			snake_counter <= 8'b00000100;
+			collision_death <= 1'b0;
 		end
 		else 
 		begin
@@ -332,9 +341,8 @@ module datapath(
 				posY <= piece_y[snake_counter];
 				col <= 3'b000;
 				snake_counter <= snake_counter - 1'b1;
-				//snake_length <= snake_length + 3'b100;
+				//snake_length <= snake_length + 3'	genvar i;
 			end
-
 			if (update || update_1) // Decides when to draw snake and move it
 			begin
 				update_1 <= 1'b1;
@@ -375,7 +383,7 @@ module datapath(
 						piece_y[0] <= piece_y[0] + 1'b1; // Move snake down		  
 					end
 					posX <= piece_x[0];
-					posY <= piece_y[0];
+					posY <= piece_y[0];			     
 					col <= 3'b111;
 					snake_counter <= snake_length;
 					update_1 <= 1'b0;
@@ -386,6 +394,7 @@ module datapath(
 	
 	wire collision;
 	assign collision = (food_x == piece_x[0] && food_y == piece_y[0]) ? 1 : 0;
+
 	
 	always@(posedge clk)
 	begin
