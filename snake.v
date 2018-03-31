@@ -325,7 +325,7 @@ module datapath(
 			if (collision) // Grow snake on collision
 			begin
 				snake_length <= snake_length + 3'b100;
-				//snake_counter <= snake_length;
+				snake_counter <= snake_length;
 				piece_x[snake_counter] <= piece_x[snake_counter - 1];
 				piece_y[snake_counter] <= piece_y[snake_counter - 1];
 				posX <= piece_x[snake_counter];
