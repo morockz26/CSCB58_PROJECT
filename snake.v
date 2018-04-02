@@ -254,7 +254,7 @@ module datapath(
 	// input registers
 	reg [22:0] counter;
 	wire update; // For deciding when to update and erase the snake piece
-	integer max = 159;
+	reg init;
 	
 	// Coordinates and extra for the food
 	wire spawn_food;
@@ -280,23 +280,14 @@ module datapath(
 		snake_counter <= 8'b00000100;
 		
 		// Initialize snakes position
-		piece_x[0] <= 8'd80;
-		piece_y[0] <= 7'd60;
-		piece_x[1] <= 8'd79;
-		piece_y[1] <= 7'd60;
-		piece_x[2] <= 8'd78;
-		piece_y[2] <= 7'd60;
-		piece_x[3] <= 8'd77;
-		piece_y[3] <= 7'd60;
-		piece_x[4] <= 8'd76;
-		piece_y[4] <= 7'd60;
+		init <= 1'b1;
 		
 		// Initialize food
-		food_x <= 8'd80;
-		food_y <= 7'd60;
+		food_x <= 8'd85;
+		food_y <= 7'd55;
 		food_col <= 3'b100; // red
-		posX <= 8'd80;
-		posY <= 7'd60;
+		posX <= 8'd85;
+		posY <= 7'd55;
 		col <= 3'b100;
 		
 		// Score starts at 0
@@ -304,14 +295,15 @@ module datapath(
 		highscore <= 8'b0;
 	end
 
-	wire [7:0] wire_piece_x [159:0];
-	wire [6:0] wire_piece_y [159:0];
-
 	always@(posedge clk) begin
-	    for (i=5; i < 159 && i < snake_length; i=i+1) begin
-		     if (piece_x[0] == piece_x[i] && piece_y[0] == piece_y[i])
-			      collision_death <= 1'b1;
-		     end
+		for (i=5; i < 159 && i < snake_length; i=i+1) begin
+			if (piece_x[0] == piece_x[i] && piece_y[0] == piece_y[i])
+				collision_death <= 1'b1;
+		end
+
+		if (piece_x[0] <= 0 || piece_x[0] >= 159 || piece_y[0] <= 1 || piece_y[0] >= 118)
+			collision_death <= 1'b1;
+
 		if(!reset_n || collision_death) begin
 		   //for (count = 1, count < max, count = count + 1)
 			piece_x[0] <= 7'd80;
@@ -328,6 +320,23 @@ module datapath(
 			snake_length <= 8'b00000100;
 			snake_counter <= 8'b00000100;
 			collision_death <= 1'b0;
+		end
+		else if (init == 1)
+		begin
+			piece_x[0] <= 8'd80;
+			piece_y[0] <= 7'd60;
+			piece_x[1] <= 8'd79;
+			piece_y[1] <= 7'd60;
+			piece_x[2] <= 8'd78;
+			piece_y[2] <= 7'd60;
+			piece_x[3] <= 8'd77;
+			piece_y[3] <= 7'd60;
+			piece_x[4] <= 8'd76;
+			piece_y[4] <= 7'd60;
+			col <= 3'b100;
+			posX <= 8'd85;
+			posY <= 7'd55;
+			init <= 1'b0;
 		end
 		else 
 		begin
@@ -398,20 +407,23 @@ module datapath(
 	
 	always@(posedge clk)
 	begin
-		if (!reset_n)
+		if (!reset_n || collision_death) begin
 			score <= 8'b0;
+			highscore <= highscore;
+		end
 		else if (collision) // Check for collision
 		begin
 			food_col <= 3'b100; // Need to move food to different location
 			food_x <=  food_counter_x;
 			food_y <= food_counter_y;
 			score <= score + 1'b1; // Increase score by 1
-			highscore <= (score > highscore) ? highscore + 1'b1 : highscore;
 		end
 		else
 		begin
 			food_col <= 3'b000;
 		end
+		if (score >= highscore)
+			highscore <= score;
 	end
 	
 	assign spawn_food = (food_col == 3'b100) ? 1 : 0;
@@ -443,12 +455,12 @@ module datapath(
 	// Our attempt to mak the food respawn randomly
 	always@(posedge clk)
 	begin
-		if (food_counter_x == 8'd160)
+		if (food_counter_x == 8'd155)
 			food_counter_x <= 8'd0;
 		else
 			food_counter_x <= food_counter_x + 1'b1;
 			
-		if (food_counter_y == 8'd120)
+		if (food_counter_y == 8'd115)
 			food_counter_y <= 7'd0;
 		else
 			food_counter_y <= food_counter_y + 1'b1; 
