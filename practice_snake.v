@@ -295,7 +295,7 @@ module datapath(
 		// Score starts at 0
 		score <= 8'b0;
 		highscore <= 8'b0;
-		reset_counter <= 8'b10000000;
+		reset_counter <= 8'b11111111;
 	end
 
 	always@(posedge clk) begin
@@ -313,7 +313,7 @@ module datapath(
 			 posY <= piece_y[reset_counter];
 			 col <= 3'b000;
 			 reset_counter <= reset_counter + 1'b1;
-			 if (reset_counter >= snake_length)
+			 if (reset_counter > snake_length)
 			 begin
 				piece_x[0] <= 7'd80;
 				piece_y[0] <= 6'd60;
@@ -328,7 +328,7 @@ module datapath(
 				snake_length <= 8'b00000100;
 				snake_counter <= 8'b00000100;
 				col <= 3'b111;
-				reset_counter <= 8'b10000000;
+				reset_counter <= 8'b11111111;
 			 end
 		end
 		else if(!reset_n || collision_death) begin	
