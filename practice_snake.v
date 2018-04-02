@@ -304,7 +304,7 @@ module datapath(
 				collision_death <= 1'b1;
 		end
 
-		if (piece_x[0] <= 1 || piece_x[0] >= 159 || piece_y[0] <= 0 || piece_y[0] >= 118)
+		if (piece_x[0] <= 2 || piece_x[0] >= 158 || piece_y[0] <= 1 || piece_y[0] >= 118)
 			collision_death <= 1'b1;
 			
 		if (reset_counter <= snake_length)
