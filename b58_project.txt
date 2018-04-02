@@ -40,6 +40,7 @@ Video URL:
 Code URL (please upload a copy of this file to your repository at the end of the project as well, it will
 serve as a useful resource for future development):
 
+Github: https://github.com/morockz26/CSCB58_PROJECT
 
 Proposal
 --------
@@ -85,14 +86,30 @@ code).
 Updates
 -------
 
+
 Week 1:
 
-We made the code to make the snake move. We ended up getting the snake to move with the keys in the direction we wanted it to go, but there was a problem deleting the trailing squares whenever the snake would move. There was also a problem with the snake going up, so we had to change our FSM to fix that (took a look to debug). 
+We made the code to make the snake move. We ended up getting the snake to move with the keys in the direction we wanted it to go, but there was a problem deleting the trailing squares whenever the snake would move. There was also a problem with the snake going up, so we had to change our FSM to fix that (took a long time to debug). 
 
 Week 2:
 
+Tried implementing the code for the snake so that the snake moves without leaving any trialing squares still on the screen. We were having trouble getting the datapath to do such, so we plan on taking a slightly different approach to the problem. 
 
+The approach we took was to have a module to generate each piece of the snake and has piece 0 as the head of the snake. That way when the other pieces aren’t needed, we just make them colour black. Our module transfers the data from one piece of the snake to the other piece so that when our snake moves the other pieces follow.
+
+We need to test this new approach next week and if it works we can focus on randomly generating the food, collision detection and growing the snake, which we could implement using our pieces of the snake.
 
 Week 3:
 
+The approach to generate a module for each piece of the snake was simplified to each piece of the snake being a part an array of values with the head at index 0. With this approach we were able to transfer data from the one piece of the snake to the other piece so that when our snake moves the other pieces follow.
+
+For the generating the food, we generate a random x and y depends when the food is eaten from its initial point. Everytime a clock rises, we increase x value by 1 and y value by 3, and reset back to 0 when x and y value reaches max resolution.
+
+While testing collision between the snake and the food, there was a bug where the snake would move on and leave behind a coloured dot. We fixed it by finding the location of where the snake would leave behind a dot and fixed it by making the colour black. Other than that the score is added correctly and the snake grows by 4 as it’s supposed to. 
+
+For the collision of the snake, we can detect when it happen by checking if the head location is the same as any other part of the snake. We make it so that the game reset when a death collision happens.
+
+Before our presentation we need to change the reset function so that either redraw the background before drawing the new snake and food, or go through every piece of the old snake and draw it black. We also need to add coloured borders for snake death collision.
+
+Week 4:
 
