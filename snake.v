@@ -270,9 +270,11 @@ module datapath(
 	reg [2:0] col;
 	reg collision_death = 1'b0;
 	reg update_1 = 1'b0;
-	integer i;
+	integer i, count;
 	reg [7:0] posX;
 	reg [6:0] posY;
+	
+	reg [7:0] reset_counter;
 
 	// Start Game
 	initial begin
@@ -293,6 +295,7 @@ module datapath(
 		// Score starts at 0
 		score <= 8'b0;
 		highscore <= 8'b0;
+		reset_counter <= 8'b11111111;
 	end
 
 	always@(posedge clk) begin
@@ -301,25 +304,36 @@ module datapath(
 				collision_death <= 1'b1;
 		end
 
-		if (piece_x[0] <= 0 || piece_x[0] >= 159 || piece_y[0] <= 1 || piece_y[0] >= 118)
+		if (piece_x[0] <= 2 || piece_x[0] >= 158 || piece_y[0] <= 1 || piece_y[0] >= 118)
 			collision_death <= 1'b1;
-
-		if(!reset_n || collision_death) begin
-		   //for (count = 1, count < max, count = count + 1)
-			piece_x[0] <= 7'd80;
-			piece_y[0] <= 6'd60;
-			piece_x[1] <= 7'd79;
-			piece_y[1] <= 6'd60;
-			piece_x[2] <= 7'd78;
-			piece_y[2] <= 6'd60;
-			piece_x[3] <= 7'd77;
-			piece_y[3] <= 6'd60;
-			piece_x[4] <= 7'd76;
-			piece_y[4] <= 6'd60;
-			col <= 3'b111;
-			snake_length <= 8'b00000100;
-			snake_counter <= 8'b00000100;
+			
+		if (reset_counter <= snake_length)
+		begin
+		    posX <= piece_x[reset_counter];
+			 posY <= piece_y[reset_counter];
+			 col <= 3'b000;
+			 reset_counter <= reset_counter + 1'b1;
+			 if (reset_counter > snake_length)
+			 begin
+				piece_x[0] <= 7'd80;
+				piece_y[0] <= 6'd60;
+				piece_x[1] <= 7'd79;
+				piece_y[1] <= 6'd60;
+				piece_x[2] <= 7'd78;
+				piece_y[2] <= 6'd60;
+				piece_x[3] <= 7'd77;
+				piece_y[3] <= 6'd60;
+				piece_x[4] <= 7'd76;
+				piece_y[4] <= 6'd60;
+				snake_length <= 8'b00000100;
+				snake_counter <= 8'b00000100;
+				col <= 3'b111;
+				reset_counter <= 8'b11111111;
+			 end
+		end
+		else if(!reset_n || collision_death) begin	
 			collision_death <= 1'b0;
+			reset_counter <= 8'b0;
 		end
 		else if (init == 1)
 		begin
