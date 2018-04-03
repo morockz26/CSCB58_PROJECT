@@ -82,11 +82,6 @@ module snake(
 	wire move_left, move_right, move_up, move_down;
 	wire [7:0] score, highscore;
 
-	//assign LEDR[3] = move_left;
-	//assign LEDR[2] = move_up;
-	//assign LEDR[1] = move_down;
-	//assign LEDR[0] = move_right;
-
 	// Instansiate FSM control
 	control c0(
 		.clk(CLOCK_50),
@@ -100,6 +95,9 @@ module snake(
 		.move_down(move_down),
 		.move_right(move_right)
 		);
+
+		
+   // Connect score and highscore to hex displays
 
 	hex_display hex0(
 		.IN(score[3:0]),
@@ -139,11 +137,7 @@ module control(
 	localparam  S_RIGHT = 5'd0,
 					S_UP = 5'd2,                                                   //00- right, 01-DOWN, 10-UP, 11-left 
                S_LEFT = 5'd3,
-					S_DOWN = 5'd1;
-//					S_RIGHT_WAIT = 5d4,
-//					S_UP_WAIT = 5'd4;
-//					S_LEFT_WAIT = 5'd6,
-//					S_DOWN_WAIT = 5'd7;		
+					S_DOWN = 5'd1;	
 				
 	// Next state logic aka our state table
 	always@(posedge left, posedge right, posedge up, posedge down)
@@ -151,8 +145,8 @@ module control(
 		case (current_state)
 			S_RIGHT:
 			begin
-				if (up == 1'b1)     // If key 2 is pressed
-					next_state = S_UP; // Go to Up state
+				if (up == 1'b1)
+					next_state = S_UP;
 				else if (down == 1'b1)  
 					next_state = S_DOWN;
 				else
@@ -160,8 +154,8 @@ module control(
 			end
 			S_UP:
 			begin
-				if (left == 1'b1)     // If key 2 is pressed
-					next_state = S_LEFT; // Go to left state
+				if (left == 1'b1)
+					next_state = S_LEFT;
 				else if (right == 1'b1)  
 					next_state = S_RIGHT;
 				else
@@ -169,8 +163,8 @@ module control(
 			end
 			S_LEFT:
 			begin
-				if (down == 1'b1)     // If key 2 is pressed
-					next_state = S_DOWN; // Go to down state
+				if (down == 1'b1)
+					next_state = S_DOWN;
 				else if (up == 1'b1)  
 					next_state = S_UP;
 				else
@@ -178,17 +172,13 @@ module control(
 			end
 			S_DOWN:
 			begin
-				if (left == 1'b1)     // If key 2 is pressed
-					next_state = S_LEFT; // Go to            default:     next_state = S_RIGHT; left state
+				if (left == 1'b1)
+					next_state = S_LEFT;
 				else if (right == 1'b1)  
 					next_state = S_RIGHT;
 				else
 					next_state = S_DOWN;
 			end
-//			S_RIGHT_WAIT: next_state = S_RIGHT;
-//			S_UP_WAIT: next_state = S_UP;
-//			S_LEFT_WAIT: next_state = S_LEFT;
-//			S_DOWN_WAIT: next_state = S_DOWN;
 			default: next_state = S_RIGHT;
 		endcase
 	end // state_table
@@ -274,7 +264,7 @@ module datapath(
 	reg [7:0] posX;
 	reg [6:0] posY;
 	
-	reg [7:0] reset_counter;
+	reg [7:0] reset_counter; // For deleting the snakes's location on death or reset
 
 	// Start Game
 	initial begin
@@ -299,19 +289,21 @@ module datapath(
 	end
 
 	always@(posedge clk) begin
+	   // Check if snake's head hits rest of it's body
 		for (i=5; i < 159 && i < snake_length; i=i+1) begin
 			if (piece_x[0] == piece_x[i] && piece_y[0] == piece_y[i])
 				collision_death <= 1'b1;
 		end
 
+		// Check if snake hits the border
 		if (piece_x[0] <= 2 || piece_x[0] >= 158 || piece_y[0] <= 1 || piece_y[0] >= 118)
 			collision_death <= 1'b1;
 			
-		if (reset_counter <= snake_length)
+		if (reset_counter <= snake_length) // Delete the snake before resetting
 		begin
 		    posX <= piece_x[reset_counter];
 			 posY <= piece_y[reset_counter];
-			 col <= 3'b000;
+			 col <= 3'b000; // Setting colour to black erases the snake
 			 reset_counter <= reset_counter + 1'b1;
 			 if (reset_counter > snake_length)
 			 begin
@@ -356,7 +348,7 @@ module datapath(
 		begin
 			if (collision) // Grow snake on collision
 			begin
-				snake_length <= snake_length + 3'b100;
+				snake_length <= snake_length + 3'b100; // Increase snake's length
 				snake_counter <= snake_length;
 				piece_x[snake_counter] <= piece_x[snake_counter - 1];
 				piece_y[snake_counter] <= piece_y[snake_counter - 1];
@@ -364,12 +356,12 @@ module datapath(
 				posY <= piece_y[snake_counter];
 				col <= 3'b000;
 				snake_counter <= snake_counter - 1'b1;
-				//snake_length <= snake_length + 3'	genvar i;
 			end
 			if (update || update_1) // Decides when to draw snake and move it
 			begin
 				update_1 <= 1'b1;
-				if (snake_counter == snake_length)
+				// Last piece will be a trailing black square
+				if (snake_counter == snake_length) // Draw the last piece of snake but make it black
 				begin
 					piece_x[snake_counter] <= piece_x[snake_counter - 1];
 					piece_y[snake_counter] <= piece_y[snake_counter - 1];				
@@ -378,7 +370,7 @@ module datapath(
 					col <= 3'b000;
 					snake_counter <= snake_counter - 1'b1;
 				end
-				else if (snake_counter != 1'b0)
+				else if (snake_counter != 1'b0) // Middle pieces
 				begin
 					piece_x[snake_counter] <= piece_x[snake_counter - 1];
 					piece_y[snake_counter] <= piece_y[snake_counter - 1];
@@ -387,7 +379,7 @@ module datapath(
 					col <= 3'b111;
 					snake_counter <= snake_counter - 1'b1;
 				end	
-				else if (snake_counter == 1'b0)
+				else if (snake_counter == 1'b0) // Head
 				begin
 					if(move_right)
 					begin
@@ -409,21 +401,21 @@ module datapath(
 					posY <= piece_y[0];			     
 					col <= 3'b111;
 					snake_counter <= snake_length;
-					update_1 <= 1'b0;
+					update_1 <= 1'b0; // Stop drawing the snake's pieces
 				end
 			end
 		end
 	end
 	
 	wire collision;
-	assign collision = (food_x == piece_x[0] && food_y == piece_y[0]) ? 1 : 0;
+	assign collision = (food_x == piece_x[0] && food_y == piece_y[0]) ? 1 : 0; // When food and snake's head collides
 
 	
 	always@(posedge clk)
 	begin
 		if (!reset_n || collision_death) begin
 			score <= 8'b0;
-			highscore <= highscore;
+			highscore <= highscore; // Highscore stays sname
 		end
 		else if (collision) // Check for collision
 		begin
@@ -436,12 +428,13 @@ module datapath(
 		begin
 			food_col <= 3'b000;
 		end
-		if (score >= highscore)
+		if (score >= highscore) // Increase highscore when score is more than it
 			highscore <= score;
 	end
 	
 	assign spawn_food = (food_col == 3'b100) ? 1 : 0;
 
+	// Decide on colour and whether to draw food or snake based on spawn_food wire
 	assign colour = spawn_food ? food_col : col;
 	assign data_result_x = spawn_food ? food_x : posX;
 	assign data_result_y = spawn_food ? food_y : posY;
@@ -466,7 +459,7 @@ module datapath(
 	reg [7:0] food_counter_x;
 	reg [6:0] food_counter_y;
 
-	// Our attempt to mak the food respawn randomly
+	// Our attempt to make the food respawn randomly
 	always@(posedge clk)
 	begin
 		if (food_counter_x == 8'd155)
