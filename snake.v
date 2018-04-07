@@ -131,22 +131,18 @@ module control(
 	reg [5:0] current_state, next_state; 
 
 	localparam  S_RIGHT = 5'd0,
-					S_UP = 5'd2,                                                   //00- right, 01-DOWN, 10-UP, 11-left 
-               S_LEFT = 5'd3,
-					S_DOWN = 5'd1;
-//					S_RIGHT_WAIT = 5d4,
-//					S_UP_WAIT = 5'd4;
-//					S_LEFT_WAIT = 5'd6,
-//					S_DOWN_WAIT = 5'd7;		
+				S_UP = 5'd2,                                                   //00- right, 01-DOWN, 10-UP, 11-left 
+				S_LEFT = 5'd3,
+				S_DOWN = 5'd1;	
 				
 	// Next state logic aka our state table
 	always@(posedge left, posedge right, posedge up, posedge down)
-	begin: state_table 
+	begin: state_table // Our FSM for the movement
 		case (current_state)
 			S_RIGHT:
 			begin
-				if (up == 1'b1)     // If key 2 is pressed
-					next_state = S_UP; // Go to Up state
+				if (up == 1'b1)
+					next_state = S_UP;
 				else if (down == 1'b1)  
 					next_state = S_DOWN;
 				else
@@ -154,8 +150,8 @@ module control(
 			end
 			S_UP:
 			begin
-				if (left == 1'b1)     // If key 2 is pressed
-					next_state = S_LEFT; // Go to left state
+				if (left == 1'b1)
+					next_state = S_LEFT;
 				else if (right == 1'b1)  
 					next_state = S_RIGHT;
 				else
@@ -163,8 +159,8 @@ module control(
 			end
 			S_LEFT:
 			begin
-				if (down == 1'b1)     // If key 2 is pressed
-					next_state = S_DOWN; // Go to down state
+				if (down == 1'b1)
+					next_state = S_DOWN;
 				else if (up == 1'b1)  
 					next_state = S_UP;
 				else
@@ -172,24 +168,20 @@ module control(
 			end
 			S_DOWN:
 			begin
-				if (left == 1'b1)     // If key 2 is pressed
-					next_state = S_LEFT; // Go to            default:     next_state = S_RIGHT; left state
+				if (left == 1'b1)
+					next_state = S_LEFT;
 				else if (right == 1'b1)  
 					next_state = S_RIGHT;
 				else
 					next_state = S_DOWN;
 			end
-//			S_RIGHT_WAIT: next_state = S_RIGHT;
-//			S_UP_WAIT: next_state = S_UP;
-//			S_LEFT_WAIT: next_state = S_LEFT;
-//			S_DOWN_WAIT: next_state = S_DOWN;
 			default: next_state = S_RIGHT;
 		endcase
 	end // state_table
 
 	// Output logic aka all of our datapath control signals
 	always @(*)
-	begin: enable_signals
+	begin: enable_signals // Sending signals to datapath
 		// By default make all our signals 0
 		move_right <= 1'b0;
 		move_down <= 1'b0;
@@ -248,7 +240,7 @@ module datapath(
 	// input registers
 	reg [22:0] counter;
 	wire update; // For deciding when to update and erase the snake piece
-	reg init;
+	reg init; // For initial snake's position
 	
 	// Coordinates and extra for the food
 	wire spawn_food;
@@ -265,6 +257,8 @@ module datapath(
 	reg collision_death = 1'b0;
 	reg update_1 = 1'b0;
 	integer i, count;
+	
+	// Position of snake
 	reg [7:0] posX;
 	reg [6:0] posY;
 	
@@ -293,16 +287,19 @@ module datapath(
 	end
 
 	always@(posedge clk) begin
+		// Check if snake's head ever hits any of its pieces
 		for (i=5; i < 159 && i < snake_length; i=i+1) begin
 			if (piece_x[0] == piece_x[i] && piece_y[0] == piece_y[i])
 				collision_death <= 1'b1;
 		end
 
+		// Check for when snake hit's the border
 		if (piece_x[0] <= 2 || piece_x[0] >= 157 || piece_y[0] <= 1 || piece_y[0] >= 118)
 			collision_death <= 1'b1;
 			
 		if (reset_counter <= snake_length)
 		begin
+			// First delete the snake, then start it back at initial position, once it's done deleting
 		    posX <= piece_x[reset_counter];
 			 posY <= piece_y[reset_counter];
 			 col <= 3'b000;
@@ -329,7 +326,7 @@ module datapath(
 			collision_death <= 1'b0;
 			reset_counter <= 8'b0;
 		end
-		else if (init == 1)
+		else if (init == 1) // Initialize snake's position and drawing food at starting position
 		begin
 			piece_x[0] <= 8'd80;
 			piece_y[0] <= 7'd60;
@@ -363,7 +360,7 @@ module datapath(
 			if (update || update_1) // Decides when to draw snake and move it
 			begin
 				update_1 <= 1'b1;
-				if (snake_counter == snake_length)
+				if (snake_counter == snake_length) // Trailing back piece that's black for deleting
 				begin
 					piece_x[snake_counter] <= piece_x[snake_counter - 1];
 					piece_y[snake_counter] <= piece_y[snake_counter - 1];				
@@ -372,7 +369,7 @@ module datapath(
 					col <= 3'b000;
 					snake_counter <= snake_counter - 1'b1;
 				end
-				else if (snake_counter != 1'b0)
+				else if (snake_counter != 1'b0) // Middle pieces
 				begin
 					piece_x[snake_counter] <= piece_x[snake_counter - 1];
 					piece_y[snake_counter] <= piece_y[snake_counter - 1];
@@ -381,7 +378,7 @@ module datapath(
 					col <= 3'b111;
 					snake_counter <= snake_counter - 1'b1;
 				end	
-				else if (snake_counter == 1'b0)
+				else if (snake_counter == 1'b0) // Head
 				begin
 					if(move_right)
 					begin
@@ -410,7 +407,7 @@ module datapath(
 	end
 	
 	wire collision;
-	assign collision = (food_x == piece_x[0] && food_y == piece_y[0]) ? 1 : 0;
+	assign collision = (food_x == piece_x[0] && food_y == piece_y[0]) ? 1 : 0; // Check if snake head eats food
 
 	
 	always@(posedge clk)
@@ -433,11 +430,11 @@ module datapath(
 		end
 	end
 	
-	assign spawn_food = (food_col == 3'b100) ? 1 : 0;
+	assign spawn_food = (food_col == 3'b100) ? 1 : 0; // Only happens after collision
 
-	assign colour = spawn_food ? food_col : col;
-	assign data_result_x = spawn_food ? food_x : posX;
-	assign data_result_y = spawn_food ? food_y : posY;
+	assign colour = spawn_food ? food_col : col; // Our colour output to VGA_ADAPTER
+	assign data_result_x = spawn_food ? food_x : posX; // Our X output to VGA_ADAPTER
+	assign data_result_y = spawn_food ? food_y : posY; // Our Y output to VGA_ADAPTER
 
 	always @(posedge clk)
 	// triggered every time clock rises
