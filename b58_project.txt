@@ -6,7 +6,6 @@ Last Name: Osumah
 Student Number: 1003232218
 UofT E-mail Address: mohammed.osumah@mail.utoronto.ca
 
-
 Team Member B
 -------------
 First Name: Sean
@@ -36,7 +35,6 @@ Project Title: Snake
 Project Description: A simple game of snake played using the DE2 board.
 
 Video URL:
-
 
 Youtube: https://www.youtube.com/watch?v=zhko9PVz6xU
 
