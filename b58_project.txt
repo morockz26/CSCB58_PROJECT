@@ -37,6 +37,9 @@ Project Description: A simple game of snake played using the DE2 board.
 
 Video URL:
 
+
+Youtube: https://www.youtube.com/watch?v=zhko9PVz6xU
+
 Code URL (please upload a copy of this file to your repository at the end of the project as well, it will
 serve as a useful resource for future development):
 
@@ -113,3 +116,10 @@ Before our presentation we need to change the reset function so that either redr
 
 Week 4:
 
+We finally got the snake to start at the center of the screen, which was a problem we were having since the first week of the project.
+
+We finally got the snake to delete itself whenever it dies or we reset the game. We also updated the black.mif file, so that it draws a pinkish background around the border, just to make the game look a bit more appealing.
+
+We changed the black.mif file to background.mif, and we changed the data in the file so that we could get a pinkish border around our game, for visual appeal.
+
+We got the score and highscore feature to work during lab time, because there was a weird bug happening where, if we reset the game using our reset switch the high score would end up going to FF and never change, so we modified our code and fixed the bug.
